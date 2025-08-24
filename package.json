@@ -1,0 +1,56 @@
+{
+  "name": "extension-backup",
+  "displayName": "extension backup",
+  "description": "do want something to backup your extension just by using you gmail? here is the extension that do it !!! ",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.103.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:backup.uploadGoogle",
+    "onCommand:backup.sendGmail"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "backup.uploadGoogle",
+        "title": "Backup: Upload Google Drive"
+      },
+      {
+        "command": "backup.sendGmail",
+        "title": "Backup: Send Gmail"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "vsce": "vsce package",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/nodemailer": "^7.0.1",
+    "@types/server-destroy": "^1.0.4",
+    "@types/vscode": "^1.103.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.32.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "googleapis": "^109.0.0",
+    "nodemailer": "^7.0.5",
+    "server-destroy": "^1.0.1"
+  }
+}
