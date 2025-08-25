@@ -1,14 +1,12 @@
+// src/googleDrive.ts
 import { google } from "googleapis";
 import * as fs from "fs";
 import * as vscode from "vscode";
 import { getOAuthClient } from "./googleAuth";
 
-export async function uploadBackup(context: vscode.ExtensionContext, filePath: string) {
+export async function getOrCreateFolder(context: vscode.ExtensionContext, folderName: string): Promise<string | undefined> {
   const auth = await getOAuthClient(context);
   const drive = google.drive({ version: "v3", auth });
-
-  const folderName = "VSCodeBackups";
-  let folderId: string | undefined;
 
   const res = await drive.files.list({
     q: `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`,
@@ -16,7 +14,7 @@ export async function uploadBackup(context: vscode.ExtensionContext, filePath: s
   });
 
   if (res.data.files && res.data.files.length > 0) {
-    folderId = res.data.files[0].id ?? undefined;
+    return res.data.files[0].id ?? undefined;
   } else {
     const folder = await drive.files.create({
       requestBody: {
@@ -25,29 +23,54 @@ export async function uploadBackup(context: vscode.ExtensionContext, filePath: s
       },
       fields: "id",
     });
-    folderId = folder.data.id ?? undefined;
+    return folder.data.id ?? undefined;
   }
+}
 
-  if (!folderId) {
-    vscode.window.showErrorMessage("Failed to get or create backup folder on Google Drive.");
+export async function uploadFile(
+  context: vscode.ExtensionContext,
+  folderId: string,
+  localPath: string,
+  fileName: string
+) {
+  const auth = await getOAuthClient(context);
+  const drive = google.drive({ version: "v3", auth });
+
+  const fileMetadata = { name: fileName, parents: [folderId] };
+  const media = { mimeType: "application/json", body: fs.createReadStream(localPath) };
+
+  await drive.files.create({ requestBody: fileMetadata as any, media, fields: "id" });
+}
+
+export async function downloadFile(
+  context: vscode.ExtensionContext,
+  folderId: string,
+  fileName: string,
+  savePath: string
+) {
+  const auth = await getOAuthClient(context);
+  const drive = google.drive({ version: "v3", auth });
+
+  const res = await drive.files.list({
+    q: `'${folderId}' in parents and name='${fileName}' and trashed=false`,
+    fields: "files(id, name)",
+  });
+
+  if (!res.data.files || res.data.files.length === 0) {
+    vscode.window.showErrorMessage(`File ${fileName} not found in Google Drive.`);
     return;
   }
 
-  const fileMetadata = {
-    name: "settings.json",
-    parents: [folderId],
-  };
+  const fileId = res.data.files[0].id!;
+  const dest = fs.createWriteStream(savePath);
 
-  const media = {
-    mimeType: "application/json",
-    body: fs.createReadStream(filePath),
-  };
-
-  await drive.files.create({
-    requestBody: fileMetadata as any, // cast to any to bypass strict types
-    media,
-    fields: "id",
-  });
-
-  vscode.window.showInformationMessage("Backup uploaded to Google Drive ✅");
+  await drive.files.get({ fileId, alt: "media" }, { responseType: "stream" },
+    (err, response) => {
+      if (err) throw err;
+      (response!.data as any)
+        .on("end", () => vscode.window.showInformationMessage(`${fileName} restored ✅`))
+        .on("error", (err: any) => vscode.window.showErrorMessage("Download failed: " + err.message))
+        .pipe(dest);
+    }
+  );
 }

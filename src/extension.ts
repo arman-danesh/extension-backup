@@ -1,38 +1,28 @@
 // src/extension.ts
 import * as vscode from "vscode";
-import { uploadBackup } from "./googleDrive";
-import * as path from "path";
-import * as os from "os";
-
-/**
- * Returns the path to VS Code's settings.json file based on OS.
- */
-function getSettingsPath(): string {
-  const home = os.homedir();
-  switch (process.platform) {
-    case "win32":
-      return path.join(process.env.APPDATA || "", "Code", "User", "settings.json");
-    case "darwin":
-      return path.join(home, "Library", "Application Support", "Code", "User", "settings.json");
-    default:
-      return path.join(home, ".config", "Code", "User", "settings.json");
-  }
-}
+import { backupAll, restoreAll } from "./backupManager";
 
 export function activate(context: vscode.ExtensionContext) {
-  // Register the command
-  const disposable = vscode.commands.registerCommand("backup.uploadGoogle", async () => {
+  // Upload / backup command
+  const disposableUpload = vscode.commands.registerCommand("backup.uploadGoogle", async () => {
     try {
-      const settingsPath = getSettingsPath();
-      await uploadBackup(context, settingsPath);
+      await backupAll(context);
     } catch (err) {
       vscode.window.showErrorMessage(`Backup failed: ${(err as Error).message}`);
     }
   });
 
-  context.subscriptions.push(disposable);
+  // Download / restore command
+  const disposableDownload = vscode.commands.registerCommand("backup.downloadGoogle", async () => {
+    try {
+      await restoreAll(context);
+    } catch (err) {
+      vscode.window.showErrorMessage(`Restore failed: ${(err as Error).message}`);
+    }
+  });
 
-  // Optional: show info message when extension is activated
+  context.subscriptions.push(disposableUpload, disposableDownload);
+
   vscode.window.showInformationMessage("VS Code Google Backup Extension Activated ✅");
 }
 

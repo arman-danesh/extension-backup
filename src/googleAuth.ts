@@ -8,8 +8,8 @@ import destroyer from "server-destroy"; // CommonJS import, patched below
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"]; // Access to Drive files
 
 // Replace with your OAuth credentials from Google Cloud Console
-const CLIENT_ID = "92264173657-jdqduicgaqcmcv533c7c18jmqslmuo5k.apps.googleusercontent.com";
-const CLIENT_SECRET = "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";
+const CLIENT_ID = "865981538929-au9ortlkbbo9eut3oa2tbpmuutsnobji.apps.googleusercontent.com";
+const CLIENT_SECRET = "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";
 const REDIRECT_URI = "http://localhost:3000"; // Desktop app flow
 
 export async function getOAuthClient(context: vscode.ExtensionContext) {

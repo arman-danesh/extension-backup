@@ -1,31 +1,20 @@
 {
   "name": "extension-backup",
-  "displayName": "extension backup",
-  "description": "do want something to backup your extension just by using you gmail? here is the extension that do it !!! ",
   "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.103.0"
+  "description": "do you want a extension to backup your all of your vs code setting just by using you gmail? here is the extension that do it !!! ",
+  "homepage": "https://github.com/arman-danesh/extension-backup#readme",
+  "bugs": {
+    "url": "https://github.com/arman-danesh/extension-backup/issues"
   },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onCommand:backup.uploadGoogle",
-    "onCommand:backup.sendGmail"
-  ],
+  "icon": "asset/icon.png", 
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arman-danesh/extension-backup.git"
+  },
+  "license": "ISC",
+  "author": "arman danesh",
+  "type": "commonjs",
   "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "backup.uploadGoogle",
-        "title": "Backup: Upload Google Drive"
-      },
-      {
-        "command": "backup.sendGmail",
-        "title": "Backup: Send Gmail"
-      }
-    ]
-  },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
@@ -34,6 +23,11 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "vscode-test"
+  },
+  "dependencies": {
+    "googleapis": "^109.0.0",
+    "nodemailer": "^7.0.5",
+    "server-destroy": "^1.0.1"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -48,9 +42,27 @@
     "eslint": "^9.32.0",
     "typescript": "^5.9.2"
   },
-  "dependencies": {
-    "googleapis": "^109.0.0",
-    "nodemailer": "^7.0.5",
-    "server-destroy": "^1.0.1"
+  "engines": {
+    "vscode": "^1.103.0"
+  },
+  "displayName": "extension backup",
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:backup.uploadGoogle",
+    "onCommand:backup.downloadGoogle"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "backup.uploadGoogle",
+        "title": "Backup: Upload Google Drive"
+      },
+      {
+        "command": "backup.downloadGoogle",
+        "title": "Backup: Download from Google Drive"
+      }
+    ]
   }
 }
