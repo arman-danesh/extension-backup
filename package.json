@@ -6,7 +6,7 @@
   "bugs": {
     "url": "https://github.com/arman-danesh/extension-backup/issues"
   },
-  "icon": "asset/icon.png", 
+  "icon": "asset/icon.png",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/arman-danesh/extension-backup.git"
@@ -27,7 +27,8 @@
   "dependencies": {
     "googleapis": "^109.0.0",
     "nodemailer": "^7.0.5",
-    "server-destroy": "^1.0.1"
+    "server-destroy": "^1.0.1",
+    "vsce": "^2.15.0"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
