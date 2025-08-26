@@ -1,36 +1,20 @@
 // src/backupManager.ts
 import * as vscode from "vscode";
 import * as path from "path";
-import * as os from "os";
 import * as fs from "fs";
 import { execSync } from "child_process";
 import { getOrCreateFolder, uploadFile, downloadFile } from "./googleDrive";
+import { getSettingsPath, getCodeCliPath } from "./utils";
 
 const BACKUP_FOLDER = "VSCodeBackups";
 
 function getBackupTargets() {
-  const home = os.homedir();
   return [
     {
       fileName: "settings.json",
-      path:
-        process.platform === "win32"
-          ? path.join(process.env.APPDATA || "", "Code", "User", "settings.json")
-          : process.platform === "darwin"
-          ? path.join(home, "Library", "Application Support", "Code", "User", "settings.json")
-          : path.join(home, ".config", "Code", "User", "settings.json"),
+      path: getSettingsPath(),
     },
   ];
-}
-
-function getCodeCliPath(): string {
-  if (process.platform === "win32") {
-    return `"${process.env.LOCALAPPDATA}\\Programs\\Microsoft VS Code\\bin\\code.cmd"`;
-  } else if (process.platform === "darwin") {
-    return "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code";
-  } else {
-    return "code"; // Linux assumes code is in PATH
-  }
 }
 
 export async function backupAll(context: vscode.ExtensionContext) {
@@ -63,7 +47,7 @@ export async function backupAll(context: vscode.ExtensionContext) {
           .map((line) => line.trim())
           .filter(Boolean);
 
-        const tempPath = path.join(os.tmpdir(), "extensions-list.json");
+        const tempPath = path.join(require("os").tmpdir(), "extensions-list.json");
         fs.writeFileSync(tempPath, JSON.stringify(extensions, null, 2), "utf8");
 
         await uploadFile(context, folderId, tempPath, "extensions-list.json");
@@ -99,7 +83,7 @@ export async function restoreAll(context: vscode.ExtensionContext) {
 
       progress.report({ message: "Downloading extensions list..." });
 
-      const tempPath = path.join(os.tmpdir(), "extensions-list.json");
+      const tempPath = path.join(require("os").tmpdir(), "extensions-list.json");
       try {
         await downloadFile(context, folderId, "extensions-list.json", tempPath);
       } catch {
