@@ -26,6 +26,7 @@ button {
   cursor: pointer;
   transition: 0.2s;
 }
+
 #backupBtn {
   background-color: #0e639c;
   color: white;
@@ -44,4 +45,8 @@ button {
   margin-top: 15px;
   font-size: 14px;
   color: #9cdcfe;
+}
+#startBackupBtn{
+  background-color: green;
+  color: #ffffff;
 }
