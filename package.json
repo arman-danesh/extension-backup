@@ -1,7 +1,7 @@
 {
   "name": "extension-backup",
   "version": "0.0.1",
-  "description": "Do you want an extension to backup all of your VS Code settings using your Gmail? Here it is!",
+  "description": "do you want a extension to backup your all of your vs code setting just by using you gmail? here is the extension that do it !!! ",
   "homepage": "https://github.com/arman-danesh/extension-backup#readme",
   "bugs": {
     "url": "https://github.com/arman-danesh/extension-backup/issues"
