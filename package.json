@@ -1,7 +1,8 @@
 {
   "name": "extension-backup",
+  "displayName": "Extension Backup",
   "version": "0.0.1",
-  "description": "do you want a extension to backup your all of your vs code setting just by using you gmail? here is the extension that do it !!! ",
+  "description": "Backup your VS Code settings and extensions using your Google account.",
   "homepage": "https://github.com/arman-danesh/extension-backup#readme",
   "bugs": {
     "url": "https://github.com/arman-danesh/extension-backup/issues"
@@ -46,24 +47,39 @@
   "engines": {
     "vscode": "^1.103.0"
   },
-  "displayName": "extension backup",
   "categories": [
     "Other"
   ],
   "activationEvents": [
-    "onCommand:backup.uploadGoogle",
-    "onCommand:backup.downloadGoogle"
+    "onView:backupView",
+    "onCommand:vscodeBackup.uploadSettings",
+    "onCommand:vscodeBackup.uploadExtensions",
+    "onCommand:vscodeBackup.downloadSettings",
+    "onCommand:vscodeBackup.downloadExtensions"
   ],
   "contributes": {
     "commands": [
-      {
-        "command": "backup.uploadGoogle",
-        "title": "Backup: Upload Google Drive"
-      },
-      {
-        "command": "backup.downloadGoogle",
-        "title": "Backup: Download from Google Drive"
-      }
-    ]
+      { "command": "vscodeBackup.uploadSettings", "title": "Backup: Upload Settings" },
+      { "command": "vscodeBackup.uploadExtensions", "title": "Backup: Upload Extensions" },
+      { "command": "vscodeBackup.downloadSettings", "title": "Backup: Download Settings" },
+      { "command": "vscodeBackup.downloadExtensions", "title": "Backup: Download Extensions" }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vscodeBackup",
+          "title": "VSCode Backup",
+          "icon": "asset/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "vscodeBackup": [
+        {
+          "id": "backupView",
+          "name": "Backup Manager"
+        }
+      ]
+    }
   }
 }
