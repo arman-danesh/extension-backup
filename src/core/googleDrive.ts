@@ -4,7 +4,15 @@ import * as fs from "fs";
 import * as vscode from "vscode";
 import { getOAuthClient } from "./googleAuth";
 
-export async function getOrCreateFolder(context: vscode.ExtensionContext, folderName: string): Promise<string | undefined> {
+/**
+ * Get an existing folder or optionally create it
+ * @param createIfMissing default true. If false, only searches and returns folder id
+ */
+export async function getOrCreateFolder(
+  context: vscode.ExtensionContext,
+  folderName: string,
+  createIfMissing: boolean = true
+): Promise<string | undefined> {
   const auth = await getOAuthClient(context);
   const drive = google.drive({ version: "v3", auth });
 
@@ -15,7 +23,7 @@ export async function getOrCreateFolder(context: vscode.ExtensionContext, folder
 
   if (res.data.files && res.data.files.length > 0) {
     return res.data.files[0].id ?? undefined;
-  } else {
+  } else if (createIfMissing) {
     const folder = await drive.files.create({
       requestBody: {
         name: folderName,
@@ -24,8 +32,29 @@ export async function getOrCreateFolder(context: vscode.ExtensionContext, folder
       fields: "id",
     });
     return folder.data.id ?? undefined;
+  } else {
+    return undefined; // Folder not found and createIfMissing is false
   }
 }
+
+/**
+ * Deletes a folder by its Google Drive ID
+ */
+export async function deleteFolder(context: vscode.ExtensionContext, folderId: string) {
+  const auth = await getOAuthClient(context);
+  const drive = google.drive({ version: "v3", auth });
+
+  try {
+    await drive.files.delete({ fileId: folderId });
+    console.log(`Deleted folder with ID ${folderId}`);
+  } catch (err) {
+    vscode.window.showErrorMessage(
+      "Failed to delete previous backup folder: " + (err as Error).message
+    );
+  }
+}
+
+
 
 export async function uploadFile(
   context: vscode.ExtensionContext,

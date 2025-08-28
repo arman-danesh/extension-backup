@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import { execSync } from "child_process";
-import { getOrCreateFolder, uploadFile, downloadFile } from "./googleDrive";
+import { getOrCreateFolder, uploadFile, downloadFile, deleteFolder } from "./googleDrive";
 import { getSettingsPath, getCodeCliPath } from "./utils";
 
 const BACKUP_FOLDER = "VSCodeBackups";
@@ -17,7 +17,18 @@ function getBackupTargets() {
   ];
 }
 
-export async function backupAll(context: vscode.ExtensionContext) {
+export async function backupAll(
+  context: vscode.ExtensionContext,
+  backupSettings: boolean = true,
+  selectedExtensions: string[] = []
+) {
+  // Check for existing backup folder
+  const existingFolderId = await getOrCreateFolder(context, BACKUP_FOLDER, false);
+  if (existingFolderId) {
+    await deleteFolder(context, existingFolderId); // ✅ Pass both context and folderId
+  }
+
+  // Create a new backup folder
   const folderId = await getOrCreateFolder(context, BACKUP_FOLDER);
   if (!folderId) {
     vscode.window.showErrorMessage("Failed to create/find backup folder.");
@@ -31,28 +42,34 @@ export async function backupAll(context: vscode.ExtensionContext) {
       cancellable: false,
     },
     async (progress) => {
-      progress.report({ message: "Backing up settings..." });
-
-      // Backup settings.json
-      for (const target of getBackupTargets()) {
-        await uploadFile(context, folderId, target.path, target.fileName);
+      // Backup settings.json if selected
+      if (backupSettings) {
+        progress.report({ message: "Backing up settings..." });
+        for (const target of getBackupTargets()) {
+          await uploadFile(context, folderId, target.path, target.fileName);
+        }
       }
 
-      progress.report({ message: "Backing up extensions list..." });
+      // Backup selected extensions
+      if (selectedExtensions.length > 0) {
+        progress.report({ message: "Backing up selected extensions..." });
 
-      const codeCmd = getCodeCliPath();
-      try {
-        const extensions = execSync(`${codeCmd} --list-extensions`, { encoding: "utf8" })
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
+        const codeCmd = getCodeCliPath();
+        let installed: string[] = [];
+        try {
+          installed = execSync(`${codeCmd} --list-extensions`, { encoding: "utf8" })
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean);
+        } catch {
+          installed = [];
+        }
 
+        const toBackup = installed.filter((ext) => selectedExtensions.includes(ext));
         const tempPath = path.join(require("os").tmpdir(), "extensions-list.json");
-        fs.writeFileSync(tempPath, JSON.stringify(extensions, null, 2), "utf8");
+        fs.writeFileSync(tempPath, JSON.stringify(toBackup, null, 2), "utf8");
 
         await uploadFile(context, folderId, tempPath, "extensions-list.json");
-      } catch (err) {
-        vscode.window.showErrorMessage("Failed to backup extensions: " + (err as Error).message);
       }
 
       vscode.window.showInformationMessage("Backup completed ✅");
@@ -74,15 +91,14 @@ export async function restoreAll(context: vscode.ExtensionContext) {
       cancellable: false,
     },
     async (progress) => {
+      // Restore settings
       progress.report({ message: "Restoring settings..." });
-
-      // Restore settings.json
       for (const target of getBackupTargets()) {
         await downloadFile(context, folderId, target.fileName, target.path);
       }
 
+      // Restore extensions
       progress.report({ message: "Downloading extensions list..." });
-
       const tempPath = path.join(require("os").tmpdir(), "extensions-list.json");
       try {
         await downloadFile(context, folderId, "extensions-list.json", tempPath);
@@ -103,8 +119,8 @@ export async function restoreAll(context: vscode.ExtensionContext) {
       }
 
       const codeCmd = getCodeCliPath();
-
       progress.report({ message: "Checking currently installed extensions..." });
+
       let installed: string[] = [];
       try {
         installed = execSync(`${codeCmd} --list-extensions`, { encoding: "utf8" })
@@ -125,7 +141,6 @@ export async function restoreAll(context: vscode.ExtensionContext) {
       for (let i = 0; i < toInstall.length; i++) {
         const ext = toInstall[i];
         progress.report({ message: `Installing extension (${i + 1}/${toInstall.length}): ${ext}` });
-
         try {
           execSync(`${codeCmd} --install-extension ${ext}`, { stdio: "inherit" });
         } catch {
