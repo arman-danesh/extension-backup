@@ -1,7 +1,7 @@
 {
   "name": "extension-backup",
   "version": "0.0.1",
-  "description": "do you want a extension to backup your all of your vs code setting just by using you gmail? here is the extension that do it !!! ",
+  "description": "Do you want an extension to backup all of your VS Code settings using your Gmail? Here it is!",
   "homepage": "https://github.com/arman-danesh/extension-backup#readme",
   "bugs": {
     "url": "https://github.com/arman-danesh/extension-backup/issues"
@@ -17,12 +17,13 @@
   "main": "./out/extension.js",
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
     "vsce": "vsce package",
-    "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test && npm run copy-css",
+    "copy-css": "cpy \"src/ui/*.css\" \"out/ui/\"",
+    "compile": "tsc -p ./ && npm run copy-css",
+    "watch": "tsc -watch -p ./ & npm run copy-css"
   },
   "dependencies": {
     "googleapis": "^109.0.0",
@@ -40,19 +41,21 @@
     "@typescript-eslint/parser": "^8.39.0",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
+    "cpy-cli": "^6.0.0",
     "eslint": "^9.32.0",
     "typescript": "^5.9.2"
   },
   "engines": {
     "vscode": "^1.103.0"
   },
-  "displayName": "extension backup",
+  "displayName": "Extension Backup",
   "categories": [
     "Other"
   ],
   "activationEvents": [
     "onCommand:backup.uploadGoogle",
-    "onCommand:backup.downloadGoogle"
+    "onCommand:backup.downloadGoogle",
+    "onCommand:backup.showUI"
   ],
   "contributes": {
     "commands": [
@@ -63,6 +66,10 @@
       {
         "command": "backup.downloadGoogle",
         "title": "Backup: Download from Google Drive"
+      },
+      {
+        "command": "backup.showUI",
+        "title": "Backup: Open Backup Manager UI"
       }
     ]
   }
