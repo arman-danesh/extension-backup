@@ -36,7 +36,7 @@
   "devDependencies": {
     "@types/archiver": "^6.0.3",
     "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
+    "@types/node": "^22.18.3",
     "@types/nodemailer": "^7.0.1",
     "@types/server-destroy": "^1.0.4",
     "@types/vscode": "^1.103.0",
@@ -58,7 +58,8 @@
   "activationEvents": [
     "onCommand:backup.uploadGoogle",
     "onCommand:backup.downloadGoogle",
-    "onCommand:backup.showUI"
+    "onCommand:backup.showUI",
+    "onCommand:backup.importBackup"
   ],
   "contributes": {
     "commands": [
@@ -73,6 +74,10 @@
       {
         "command": "backup.showUI",
         "title": "Backup: Open Backup Manager UI"
+      },
+      {
+        "command": "backup.importBackup",
+        "title": "Backup: Import Backup from Folder"
       }
     ]
   }

@@ -4,18 +4,16 @@ import { google } from "googleapis";
 import * as http from "http";
 import * as url from "url";
 import destroyer from "server-destroy"; // CommonJS import, patched below
-import dotenv from 'dotenv';
-
-dotenv.config();
+import config from "../../config.json";
 const SCOPES = [
   "https://www.googleapis.com/auth/drive.file",   // Existing Drive access
   "https://www.googleapis.com/auth/gmail.send"    // New Gmail send access
 ];
 
 // Replace with your OAuth credentials from Google Cloud Console
-const CLIENT_ID = process.env.CLIENT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = "http://localhost:3000"; // Desktop app flow
+const CLIENT_ID = config.CLIENT_ID;
+const CLIENT_SECRET = config.CLIENT_SECRET;
+const REDIRECT_URI = "http://localhost:1250"; // Desktop app flow
 
 export async function getOAuthClient(context: vscode.ExtensionContext) {
   const oAuth2Client = new google.auth.OAuth2(
@@ -53,9 +51,9 @@ export async function getOAuthClient(context: vscode.ExtensionContext) {
 
   // Create local server to receive auth code
   const server = http.createServer(async (req, res) => {
-    if (!req.url) return;
+    if (!req.url){return;}
 
-    const qs = new url.URL(req.url, "http://localhost:3000").searchParams;
+    const qs = new url.URL(req.url, "http://localhost:1250").searchParams;
     const code = qs.get("code");
 
     if (code) {
@@ -84,7 +82,7 @@ export async function getOAuthClient(context: vscode.ExtensionContext) {
     }
   });
 
-  server.listen(3000);
+  server.listen(1250);
   (destroyer as any)(server); // Patch server to have destroy()
 
   return oAuth2Client;

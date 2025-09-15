@@ -9,7 +9,7 @@ import archiver from "archiver";
 import { execSync } from "child_process";
 const BACKUP_FOLDER = "VSCodeBackups";
 import { sendBackupViaGmailAPI } from "./gmailSender";
-
+type ImportMode = "settings" | "extensions" | "all";
 function getBackupTargets() {
   return [
     {
@@ -85,7 +85,7 @@ export async function backupAll(
 }
 export async function backupToZip(folderName: string = "VSCodeBackup"): Promise<string> {
   const tempDir = path.join(os.tmpdir(), folderName);
-  if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+  if (!fs.existsSync(tempDir)) {fs.mkdirSync(tempDir, { recursive: true });}
 
   // Copy settings.json
   const settingsPath = getSettingsPath();
@@ -104,10 +104,13 @@ export async function backupToZip(folderName: string = "VSCodeBackup"): Promise<
 
   return new Promise<string>((resolve, reject) => {
     output.on("close", () => resolve(zipPath));
-    archive.on("error", (err:string) => reject(err));
+    archive.on("error", (err: string) => reject(err));
 
     archive.pipe(output);
-    archive.directory(tempDir, false);
+
+    // IMPORTANT: Keep folder in ZIP
+    archive.directory(tempDir, folderName);
+
     archive.finalize();
   });
 }
@@ -120,8 +123,6 @@ export async function sendBackupByEmail(context: vscode.ExtensionContext, recipi
     vscode.window.showErrorMessage(`Failed to send backup: ${(err as Error).message}`);
   }
 }
-
-
 
 export async function restoreAll(context: vscode.ExtensionContext) {
   try {
@@ -202,5 +203,88 @@ export async function restoreAll(context: vscode.ExtensionContext) {
     );
   } catch (err) {
     vscode.window.showErrorMessage(`Restore failed: ${err}`);
+  }
+}
+
+export async function importBackupFromFolder(mode: ImportMode = "all") {
+  try {
+    const folderUri = await vscode.window.showOpenDialog({
+      canSelectFiles: false,
+      canSelectFolders: true,
+      canSelectMany: false,
+      openLabel: "Select Backup Folder"
+    });
+
+    if (!folderUri || folderUri.length === 0) {
+      vscode.window.showWarningMessage("No folder selected for import.");
+      return;
+    }
+
+    const folderPath = folderUri[0].fsPath;
+
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: "Importing VS Code Backup", cancellable: false },
+      async (progress) => {
+        if (mode === "settings" || mode === "all") {
+          const settingsFile = path.join(folderPath, "settings.json");
+          if (fs.existsSync(settingsFile)) {
+            progress.report({ message: "Restoring settings..." });
+            try {
+              const newSettings = JSON.parse(fs.readFileSync(settingsFile, "utf-8"));
+              const config = vscode.workspace.getConfiguration();
+              for (const [key, value] of Object.entries(newSettings)) {
+                await config.update(key, value, vscode.ConfigurationTarget.Global);
+              }
+              vscode.window.showInformationMessage("Settings restored ✅");
+            } catch (err) {
+              vscode.window.showErrorMessage(`Failed to restore settings: ${err}`);
+            }
+          } else if (mode === "settings") {
+            vscode.window.showWarningMessage("settings.json not found.");
+          }
+        }
+
+        if (mode === "extensions" || mode === "all") {
+          const extFile = path.join(folderPath, "extensions-list.json");
+          if (fs.existsSync(extFile)) {
+            progress.report({ message: "Installing extensions..." });
+            try {
+              const extensions: string[] = JSON.parse(fs.readFileSync(extFile, "utf-8"));
+              const installed = getInstalledExtensions();
+              const toInstall = extensions.filter(ext => !installed.includes(ext));
+
+              if (toInstall.length === 0) {
+                vscode.window.showInformationMessage("All extensions already installed ✅");
+                return;
+              }
+
+              const failed: string[] = [];
+              for (let i = 0; i < toInstall.length; i++) {
+                const ext = toInstall[i];
+                progress.report({ message: `Installing extension (${i + 1}/${toInstall.length}): ${ext}` });
+                try {
+                  execSync(`${getCodeCliPath()} --install-extension ${ext}`, { stdio: "inherit" });
+                } catch (err) {
+                  failed.push(ext);
+                  vscode.window.showWarningMessage(`Failed to install extension ${ext}: ${err}`);
+                }
+              }
+
+              if (failed.length > 0) {
+                vscode.window.showWarningMessage(`Some extensions failed: ${failed.join(", ")}`);
+              } else {
+                vscode.window.showInformationMessage("Extensions restored ✅");
+              }
+            } catch (err) {
+              vscode.window.showErrorMessage(`Failed to restore extensions: ${err}`);
+            }
+          } else if (mode === "extensions") {
+            vscode.window.showWarningMessage("extensions-list.json not found.");
+          }
+        }
+      }
+    );
+  } catch (err) {
+    vscode.window.showErrorMessage(`Import failed: ${err}`);
   }
 }

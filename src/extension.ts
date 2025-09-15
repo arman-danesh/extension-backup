@@ -1,4 +1,3 @@
-import * as dotenv from 'dotenv';
 import * as vscode from "vscode";
 import { registerBackupCommand } from "./commands/backupCommand";
 import { registerRestoreCommand } from "./commands/restoreCommand";
@@ -17,6 +16,4 @@ export function activate(context: vscode.ExtensionContext) {
 
   vscode.window.showInformationMessage("VS Code Google Backup Extension Activated ✅");
 }
-
-dotenv.config();
 export function deactivate() {}

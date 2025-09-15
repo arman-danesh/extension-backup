@@ -1,6 +1,11 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import { backupAll, restoreAll, sendBackupByEmail } from "../core/backupManager";
+import { 
+  backupAll,  
+  importBackupFromFolder,  
+  restoreAll, 
+  sendBackupByEmail 
+} from "../core/backupManager";
 
 export function showBackupUI(context: vscode.ExtensionContext) {
   const panel = vscode.window.createWebviewPanel(
@@ -23,6 +28,7 @@ export function showBackupUI(context: vscode.ExtensionContext) {
 
   panel.webview.html = getWebviewContent(cssUri, extensions);
 
+  // ✅ Only ONE listener for all messages
   panel.webview.onDidReceiveMessage(async (message) => {
     if (message.command === "backup") {
       vscode.window.withProgress(
@@ -40,10 +46,16 @@ export function showBackupUI(context: vscode.ExtensionContext) {
 
     if (message.command === "gmailBackup") {
       await sendBackupByEmail(context, message.email);
-    } 
+    }
 
+    panel.webview.onDidReceiveMessage(async (message) => {
+      if (message.command === "importBackup") {
+        await importBackupFromFolder(message.mode);
+      }
+    });
   });
 }
+
 
 function getWebviewContent(cssUri: vscode.Uri, extensions: {id:string,name:string}[]): string {
   const extensionCheckboxes = extensions.map(ext =>
@@ -72,6 +84,7 @@ function getWebviewContent(cssUri: vscode.Uri, extensions: {id:string,name:strin
     <div class="tabs">
       <div class="tab active" data-tab="driveTab">Google Drive</div>
       <div class="tab" data-tab="gmailTab">Gmail Export</div>
+      <div class="tab" data-tab="importTab">Import Backup</div>
     </div>
 
     <div id="driveTab" class="tabContent active">
@@ -107,6 +120,16 @@ function getWebviewContent(cssUri: vscode.Uri, extensions: {id:string,name:strin
         <input type="email" id="emailInput" placeholder="example@gmail.com" style="width:100%; padding:5px; margin-top:5px; margin-bottom:10px;">
         <button id="startGmailBackup" style="background-color:green; color:white;">Backup & Send</button>
         <div class="status" id="gmailStatus">Ready to backup and send.</div>
+      </div>
+    </div>
+
+    <div id="importTab" class="tabContent">
+      <div class="card">
+        <h3>Import Backup</h3>
+        <button id="importAllBtn">Import Folder (All)</button>
+        <button id="importSettingsBtn">Import Settings Only</button>
+        <button id="importExtBtn">Import Extensions Only</button>
+        <div class="status" id="importStatus">Ready to import backup.</div>
       </div>
     </div>
 
@@ -164,6 +187,15 @@ function getWebviewContent(cssUri: vscode.Uri, extensions: {id:string,name:strin
           }
           vscode.postMessage({ command: 'gmailBackup', email });
           gmailStatus.textContent = 'Backing up and preparing email... ⏳';
+        });
+        document.getElementById('importAllBtn').addEventListener('click', () => {
+            vscode.postMessage({ command: 'importBackup', mode: 'all' });
+          });
+          document.getElementById('importSettingsBtn').addEventListener('click', () => {
+            vscode.postMessage({ command: 'importBackup', mode: 'settings' });
+          });
+          document.getElementById('importExtBtn').addEventListener('click', () => {
+            vscode.postMessage({ command: 'importBackup', mode: 'extensions' });
         });
       })();
     </script>
